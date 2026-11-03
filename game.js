@@ -379,15 +379,22 @@ if (!soundtrack?.supported) {
  $("musicPreview").textContent = "♫ Music unavailable";
 }
 let musicRequest = 0;
+let musicBusy = false;
+function setMusicBusy(busy) {
+ // aria-busy provides feedback without disabling the focused button.
+ // Native Space/Enter activation and keyboard focus must survive audio resume().
+ musicBusy = busy;
+ $("musicGame").setAttribute("aria-busy", String(busy));
+ $("musicPreview").setAttribute("aria-busy", String(busy));
+}
 function clickMusic(event) {
- if (!soundtrack?.supported) return;
+ if (!soundtrack?.supported || musicBusy) return;
  const request=++musicRequest;
  const target=event.currentTarget;
  // A HUD pointer click resumes gameplay keyboard focus; keyboard activation
  // and the explanatory preview button retain their ordinary button focus.
  if(target===$("musicGame") && event.detail!==0)canvas.focus({preventScroll:true});
- $("musicGame").disabled=true;
- $("musicPreview").disabled=true;
+ setMusicBusy(true);
  $("gameMessage").textContent="Doot is warming up its mathematical vocal cords…";
  const action = soundtrack.isPlaying() ? soundtrack.toggle(false)
    : soundtrack.enabled() ? soundtrack.play() : soundtrack.toggle(true);
@@ -408,8 +415,7 @@ function clickMusic(event) {
    $("gameMessage").textContent="Audio could not start. Check browser sound permissions and output.";
  }).finally(()=>{
    if(request!==musicRequest)return;
-   $("musicGame").disabled=false;
-   $("musicPreview").disabled=false;
+   setMusicBusy(false);
  });
 }
 $("musicGame").addEventListener("click",clickMusic);
