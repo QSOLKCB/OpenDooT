@@ -9,6 +9,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <script src="site.js" defer></script>
+  <script src="music.js" defer></script>
   <script src="game.js" defer></script>
 </head>
 <body>
@@ -97,7 +98,8 @@
             <span>QUIET <strong id="coinCount">0 / 7</strong></span>
             <span>LIVES <strong id="lifeCount">♥ ♥ ♥</strong></span>
             <span>TIME <strong id="gameTime">0:00</strong></span>
-            <button id="muteGame" class="hud-button" type="button" aria-pressed="true">🔇 Sound off</button>
+            <button id="muteGame" class="hud-button" type="button" aria-pressed="true" title="Toggle gameplay sound effects">🔇 Sound off</button>
+            <button id="musicGame" class="hud-button" type="button" aria-pressed="false" title="Opt in to the mathematical Doot Song soundtrack">♫ Doot Song off</button>
           </div>
           <div class="canvas-box">
             <canvas id="gameCanvas" width="960" height="480" role="img" aria-label="Side scrolling platform game. Collect seven quiet tokens, avoid notifications, and reach the unsubscribe door."></canvas>
@@ -120,6 +122,22 @@
             <button type="button" data-hold="jump" aria-label="Jump">⬆ JUMP</button>
             <button type="button" id="touchPause" aria-label="Pause or resume game">Ⅱ</button>
           </div>
+        </div>
+        <div class="song-credit">
+          <div><strong>🎼 THE DOOT SONG</strong> <span>142 BPM · oscillators + formants · zero audio files</span></div>
+          <details>
+            <summary>Read the original nine-line score</summary>
+            <pre>Doot. Doot. Doot. Doot.
+Doot. Doot. Doot. Email.
+Doot. Doot. Doot. Doot.
+Doot. Doot. Doot. Doot.
+Email. Doot. Doot. Doot.
+Doot. Doot. Doot.
+Doot. Doot.
+Doot.
+Weee. Weee. Weee. Weee. Dooooooooot.</pre>
+          </details>
+          <p>Music requires a click on <strong>♫ Doot Song off</strong>. It is silent by default, loops during gameplay, and stops on pause, game over, or tab changes. Sound effects have their own switch.</p>
         </div>
         <p class="game-note">All gameplay happens locally in your browser. No scores uploaded, no accounts, no assets downloaded. Keyboard and touch controls supported. <span id="gameMessage" role="status">DooT may be irritating, but your data stays yours.</span></p>
       </section>

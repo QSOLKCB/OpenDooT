@@ -4,6 +4,7 @@
 const $ = id => document.getElementById(id);
 const canvas = $("gameCanvas");
 const ctx = canvas.getContext("2d");
+const soundtrack = window.DootMusic; // Loaded before game.js, optional for isolated tests.
 if(!ctx) { $("gameMessage").textContent="Canvas is unavailable in this browser.";return; }
 const W=960,H=480,WORLD=3320,GRAVITY=1750,SPEED=340,JUMP=-700,STEP=1/60;
 const ground=[
@@ -62,21 +63,23 @@ function start(){
  if(state.mode==="running")return;
  if(state.mode==="ready"||state.mode==="lost"||state.mode==="won")reset();
  state.mode="running";$("gameOverlay").hidden=true;
+ soundtrack?.play();
  $("gameMessage").textContent="DooT is very upset about your progress. Excellent.";
  canvas.focus?.({preventScroll:true});
 }
 function pause(){
  if(state.mode!=="running")return;
- state.mode="paused";input.left=false;input.right=false;input.jump=false;input.jumpBuffer=0;
+ state.mode="paused";soundtrack?.pause();input.left=false;input.right=false;input.jump=false;input.jumpBuffer=0;
  showOverlay("HAPPILY UNINTERRUPTED","Paused. Beautiful silence.","Even DooT cannot interrupt a paused game. Press Resume to continue.","▶ Resume escape");
 }
 function restart(){
+ soundtrack?.pause();
  reset();state.mode="ready";
  showOverlay("RESTART REQUEST ACCEPTED","You have one job.","Collect seven quiet tokens and reach UNSUBSCRIBE while dodging unsolicited notifications.","▶ Start escaping");
  $("gameMessage").textContent="Fresh start. No progress data is stored.";
 }
 function finish(win){
- state.mode=win?"won":"lost";input.left=input.right=input.jump=false;
+ state.mode=win?"won":"lost";soundtrack?.pause();input.left=input.right=input.jump=false;
  if(win){
   showOverlay("CONGRATULATIONS: BOUNDARIES ESTABLISHED","YOU UNSUBSCRIBED!","You collected "+state.collected+" quiet tokens in "+Math.floor(state.seconds)+" seconds. DooT has been assigned to a very distant server farm.","↻ Play again");
   $("gameMessage").textContent="Achievement: a notification-free existence. Outstanding.";
@@ -287,7 +290,8 @@ function key(event,pressed){
  }
  if(state.mode==="running" || state.mode==="paused"){
   if(event.target===document.body||event.target===canvas||document.activeElement===canvas||
-     document.activeElement===$("muteGame")||document.activeElement===$("touchPause")||
+     document.activeElement===$("muteGame")||document.activeElement===$("musicGame")||
+     document.activeElement===$("touchPause")||
      document.activeElement===$("restartGame"))event.preventDefault();
  }
  if(key==="p"||key==="escape"){
@@ -308,7 +312,8 @@ window.addEventListener("keydown",event=>{
  const focused=document.activeElement;
  // Typing controls and unrelated buttons must retain their normal keyboard behavior.
  if(focused?.isContentEditable || ["INPUT","TEXTAREA","SELECT"].includes(focused?.tagName))return;
- const gameButton=focused===$("muteGame")||focused===$("touchPause")||focused===$("restartGame");
+ const gameButton=focused===$("muteGame")||focused===$("musicGame")||
+   focused===$("touchPause")||focused===$("restartGame");
  if(focused?.tagName==="BUTTON"){
   if(!gameButton)return;
   // Space/Enter must still activate a focused button rather than the player jump.
@@ -343,6 +348,18 @@ $("muteGame").addEventListener("click",event=>{
  if(state.sound)blip(480);
  // Pointer clicks otherwise strand keyboard users on the HUD button.
  // Preserve focus for Space/Enter activation by keyboard (detail === 0).
+ if(event.detail!==0)canvas.focus({preventScroll:true});
+});
+$("musicGame").disabled = !soundtrack?.supported;
+if (!soundtrack?.supported) $("musicGame").textContent = "♫ Music unavailable";
+$("musicGame").addEventListener("click",event=>{
+ const enabled = soundtrack?.toggle(state.mode==="running") ?? false;
+ $("musicGame").setAttribute("aria-pressed", String(enabled));
+ $("musicGame").textContent = enabled ? "🎵 Doot Song on" : "♫ Doot Song off";
+ $("gameMessage").textContent = enabled
+   ? "The Doot Song is armed. It plays only while you're escaping."
+   : "Doot has been musically silenced. For once.";
+ // Retain native Space/Enter button activation; pointer clicks restore game focus.
  if(event.detail!==0)canvas.focus({preventScroll:true});
 });
 canvas.setAttribute("tabindex","0");
