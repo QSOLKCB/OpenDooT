@@ -279,8 +279,16 @@ function key(event,pressed){
  const key=event.key.toLowerCase();
  const movements=["arrowleft","arrowright","arrowup","a","d","w"," ","p","escape"];
  if(!movements.includes(key))return;
+ if(!pressed && key===" " && event.target?.tagName==="BUTTON"){
+  // Space activates a focused button on keyup. Don't cancel that native
+  // activation, but still release a jump held before focus changed.
+  input.jump=false;
+  return;
+ }
  if(state.mode==="running" || state.mode==="paused"){
-  if(event.target===document.body||event.target===canvas||document.activeElement===canvas)event.preventDefault();
+  if(event.target===document.body||event.target===canvas||document.activeElement===canvas||
+     document.activeElement===$("muteGame")||document.activeElement===$("touchPause")||
+     document.activeElement===$("restartGame"))event.preventDefault();
  }
  if(key==="p"||key==="escape"){
   if(pressed&&!event.repeat){
@@ -297,7 +305,16 @@ function key(event,pressed){
  }
 }
 window.addEventListener("keydown",event=>{
- if(!["INPUT","TEXTAREA","SELECT","BUTTON"].includes(document.activeElement?.tagName))key(event,true);
+ const focused=document.activeElement;
+ // Typing controls and unrelated buttons must retain their normal keyboard behavior.
+ if(focused?.isContentEditable || ["INPUT","TEXTAREA","SELECT"].includes(focused?.tagName))return;
+ const gameButton=focused===$("muteGame")||focused===$("touchPause")||focused===$("restartGame");
+ if(focused?.tagName==="BUTTON"){
+  if(!gameButton)return;
+  // Space/Enter must still activate a focused button rather than the player jump.
+  if(event.key===" "||event.key==="Enter")return;
+ }
+ key(event,true);
 });
 window.addEventListener("keyup",event=>key(event,false));
 window.addEventListener("blur",()=>{input.left=input.right=input.jump=false;if(state.mode==="running")pause();});
@@ -320,10 +337,13 @@ document.querySelectorAll("[data-hold]").forEach(touchControl);
 $("touchPause").addEventListener("click",()=>{if(state.mode==="running")pause();else if(state.mode==="paused")start();});
 $("gameStart").addEventListener("click",start);
 $("restartGame").addEventListener("click",restart);
-$("muteGame").addEventListener("click",()=>{
+$("muteGame").addEventListener("click",event=>{
  state.sound=!state.sound;$("muteGame").textContent=state.sound?"🔊 Sound on":"🔇 Sound off";
  $("muteGame").setAttribute("aria-pressed",String(!state.sound));
  if(state.sound)blip(480);
+ // Pointer clicks otherwise strand keyboard users on the HUD button.
+ // Preserve focus for Space/Enter activation by keyboard (detail === 0).
+ if(event.detail!==0)canvas.focus({preventScroll:true});
 });
 canvas.setAttribute("tabindex","0");
 reset();draw();requestAnimationFrame(loop);

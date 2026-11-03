@@ -23,6 +23,7 @@ jobs:
         run: |
           node --check site.js
           node --check game.js
+          node tests/game-input.test.cjs
 
   deploy:
     if: github.event_name != 'pull_request'
