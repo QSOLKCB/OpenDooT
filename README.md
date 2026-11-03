@@ -77,7 +77,7 @@ Email. Doot. Doot. Doot.
 Doot. Doot. Doot.
 Doot. Doot.
 Doot.
-Weee. Weee. Weee. Weee. Dooooooooot.
+Weee. Weee.  Weee. Weee.. Doooooooot.
 ```
 
 This is not a recording or a text-to-speech API call. `music.js` generates an **original 142 BPM arcade tune** using only the Web Audio API and mathematics:
