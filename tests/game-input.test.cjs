@@ -70,6 +70,16 @@ const keyboard=(key,pressed=true)=>{
   handler(ev);
   return prevented;
 };
+function spaceActivate(id){
+  // Browsers activate a focused button with Space on keyup, unless canceled.
+  // Simulate that default behavior to verify the complete event sequence.
+  const button=el(id);
+  doc.activeElement=button;
+  assert.equal(keyboard(" ",true),false,"Space keydown must preserve "+id+" activation");
+  assert.equal(keyboard(" ",false),false,"Space keyup must preserve "+id+" activation");
+  button.handlers.click({detail:0});
+  assert.equal(input.jump,false,"Space button interaction must not leave jump held");
+}
 let ms=1000;
 function tick(frames=2){
   for(let i=0;i<frames;i++){ms+=17;frame(ms);}
@@ -99,14 +109,30 @@ assert.equal(keyboard("ArrowRight"),true,"Game key should work on game HUD butto
 tick();
 assert.ok(state.player.x>x,"Arrow movement while mute button focused");
 keyboard("ArrowRight",false);
-assert.equal(keyboard(" ",true),false,"Space must activate focused button natively");
-assert.equal(input.jump,false,"Space on sound button must not jump");
-keyboard(" ",false);
+const oldSound=state.sound;
+spaceActivate("muteGame");
+assert.equal(state.sound,!oldSound,"Keyboard Space must actually toggle sound");
+assert.equal(doc.activeElement,el("muteGame"),"Keyboard sound activation must retain focus");
 assert.equal(keyboard("p"),true,"P pauses from focused HUD control");
 assert.equal(state.mode,"paused");
 assert.equal(keyboard("Escape"),true,"Escape resumes from focused HUD control");
 assert.equal(state.mode,"running");
 assert.equal(doc.activeElement,el("gameCanvas"),"Resuming returns focus to canvas");
+
+// The same native Space keyup mechanism must work on pause and restart.
+spaceActivate("touchPause");
+assert.equal(state.mode,"paused","Space must activate the focused pause button");
+spaceActivate("touchPause");
+assert.equal(state.mode,"running","Space must resume from focused pause button");
+spaceActivate("restartGame");
+assert.equal(state.mode,"ready","Space must activate the focused restart button");
+spaceActivate("gameStart");
+assert.equal(state.mode,"running","Space must activate the focused start button");
+assert.equal(doc.activeElement,el("gameCanvas"),"Start should return game focus");
+doc.activeElement=el("gameCanvas");
+input.jump=true;
+assert.equal(keyboard(" ",false),true,"Canvas Space keyup should still prevent scroll");
+assert.equal(input.jump,false,"Canvas Space keyup must release held jump");
 
 // Preserve normal typing and unrelated button activation. Key-up always
 // releases held movement even if focus moves away before the release.
@@ -128,4 +154,4 @@ assert.equal(input.right,false,"Releasing a game key after focus change must not
 doc.activeElement={tagName:"BUTTON"};
 keyboard("d");
 assert.equal(input.right,false,"Unrelated focused buttons remain untouched");
-console.log("DooT Escape focused sound button, pause, movement and typing regression: PASS");
+console.log("DooT Escape full Space keydown/keyup, native button activation, focus, movement and typing: PASS");

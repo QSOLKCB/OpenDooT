@@ -279,6 +279,12 @@ function key(event,pressed){
  const key=event.key.toLowerCase();
  const movements=["arrowleft","arrowright","arrowup","a","d","w"," ","p","escape"];
  if(!movements.includes(key))return;
+ if(!pressed && key===" " && event.target?.tagName==="BUTTON"){
+  // Space activates a focused button on keyup. Don't cancel that native
+  // activation, but still release a jump held before focus changed.
+  input.jump=false;
+  return;
+ }
  if(state.mode==="running" || state.mode==="paused"){
   if(event.target===document.body||event.target===canvas||document.activeElement===canvas||
      document.activeElement===$("muteGame")||document.activeElement===$("touchPause")||
