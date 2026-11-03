@@ -5,6 +5,16 @@ const $ = id => document.getElementById(id);
 const canvas = $("gameCanvas");
 const ctx = canvas.getContext("2d");
 const soundtrack = window.DootMusic; // Loaded before game.js, optional for isolated tests.
+function updateMusicUI() {
+ if (!soundtrack?.supported) return;
+ const active=!!soundtrack.isPlaying();
+ const enabled=!!soundtrack?.enabled();
+ $("musicGame").setAttribute("aria-pressed", String(active));
+ $("musicGame").textContent=active ? "⏸ Doot Song playing" : "♫ Doot Song off";
+ $("musicPreview").setAttribute("aria-pressed", String(active));
+ $("musicPreview").textContent=active ? "⏸ Stop Doot Song" : "▶ Hear the Doot Song";
+ if (enabled && !active) $("musicGame").textContent="▶ Resume Doot Song";
+}
 if(!ctx) { $("gameMessage").textContent="Canvas is unavailable in this browser.";return; }
 const W=960,H=480,WORLD=3320,GRAVITY=1750,SPEED=340,JUMP=-700,STEP=1/60;
 const ground=[
@@ -63,23 +73,25 @@ function start(){
  if(state.mode==="running")return;
  if(state.mode==="ready"||state.mode==="lost"||state.mode==="won")reset();
  state.mode="running";$("gameOverlay").hidden=true;
- soundtrack?.play();
+ if(soundtrack?.enabled() && !soundtrack.isPlaying()) {
+   Promise.resolve(soundtrack.play()).then(updateMusicUI).catch(updateMusicUI);
+ }
  $("gameMessage").textContent="DooT is very upset about your progress. Excellent.";
  canvas.focus?.({preventScroll:true});
 }
 function pause(){
  if(state.mode!=="running")return;
- state.mode="paused";soundtrack?.pause();input.left=false;input.right=false;input.jump=false;input.jumpBuffer=0;
+ state.mode="paused";soundtrack?.pause();updateMusicUI();input.left=false;input.right=false;input.jump=false;input.jumpBuffer=0;
  showOverlay("HAPPILY UNINTERRUPTED","Paused. Beautiful silence.","Even DooT cannot interrupt a paused game. Press Resume to continue.","▶ Resume escape");
 }
 function restart(){
- soundtrack?.pause();
+ soundtrack?.pause();updateMusicUI();
  reset();state.mode="ready";
  showOverlay("RESTART REQUEST ACCEPTED","You have one job.","Collect seven quiet tokens and reach UNSUBSCRIBE while dodging unsolicited notifications.","▶ Start escaping");
  $("gameMessage").textContent="Fresh start. No progress data is stored.";
 }
 function finish(win){
- state.mode=win?"won":"lost";soundtrack?.pause();input.left=input.right=input.jump=false;
+ state.mode=win?"won":"lost";soundtrack?.pause();updateMusicUI();input.left=input.right=input.jump=false;
  if(win){
   showOverlay("CONGRATULATIONS: BOUNDARIES ESTABLISHED","YOU UNSUBSCRIBED!","You collected "+state.collected+" quiet tokens in "+Math.floor(state.seconds)+" seconds. DooT has been assigned to a very distant server farm.","↻ Play again");
   $("gameMessage").textContent="Achievement: a notification-free existence. Outstanding.";
@@ -291,6 +303,7 @@ function key(event,pressed){
  if(state.mode==="running" || state.mode==="paused"){
   if(event.target===document.body||event.target===canvas||document.activeElement===canvas||
      document.activeElement===$("muteGame")||document.activeElement===$("musicGame")||
+     document.activeElement===$("musicPreview")||
      document.activeElement===$("touchPause")||
      document.activeElement===$("restartGame"))event.preventDefault();
  }
@@ -313,6 +326,7 @@ window.addEventListener("keydown",event=>{
  // Typing controls and unrelated buttons must retain their normal keyboard behavior.
  if(focused?.isContentEditable || ["INPUT","TEXTAREA","SELECT"].includes(focused?.tagName))return;
  const gameButton=focused===$("muteGame")||focused===$("musicGame")||
+   focused===$("musicPreview")||
    focused===$("touchPause")||focused===$("restartGame");
  if(focused?.tagName==="BUTTON"){
   if(!gameButton)return;
@@ -322,8 +336,16 @@ window.addEventListener("keydown",event=>{
  key(event,true);
 });
 window.addEventListener("keyup",event=>key(event,false));
-window.addEventListener("blur",()=>{input.left=input.right=input.jump=false;if(state.mode==="running")pause();});
-document.addEventListener("visibilitychange",()=>{if(document.hidden&&state.mode==="running")pause();});
+window.addEventListener("blur",()=>{
+ input.left=input.right=input.jump=false;
+ if(state.mode==="running")pause();
+ else {soundtrack?.pause();updateMusicUI();}
+});
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden)return;
+ if(state.mode==="running")pause();
+ else {soundtrack?.pause();updateMusicUI();}
+});
 function touchControl(button){
  const action=button.dataset.hold;
  const set=(down)=>{
@@ -351,17 +373,48 @@ $("muteGame").addEventListener("click",event=>{
  if(event.detail!==0)canvas.focus({preventScroll:true});
 });
 $("musicGame").disabled = !soundtrack?.supported;
-if (!soundtrack?.supported) $("musicGame").textContent = "♫ Music unavailable";
-$("musicGame").addEventListener("click",event=>{
- const enabled = soundtrack?.toggle(state.mode==="running") ?? false;
- $("musicGame").setAttribute("aria-pressed", String(enabled));
- $("musicGame").textContent = enabled ? "🎵 Doot Song on" : "♫ Doot Song off";
- $("gameMessage").textContent = enabled
-   ? "The Doot Song is armed. It plays only while you're escaping."
-   : "Doot has been musically silenced. For once.";
- // Retain native Space/Enter button activation; pointer clicks restore game focus.
- if(event.detail!==0)canvas.focus({preventScroll:true});
-});
+$("musicPreview").disabled = !soundtrack?.supported;
+if (!soundtrack?.supported) {
+ $("musicGame").textContent = "♫ Music unavailable";
+ $("musicPreview").textContent = "♫ Music unavailable";
+}
+let musicRequest = 0;
+function clickMusic(event) {
+ if (!soundtrack?.supported) return;
+ const request=++musicRequest;
+ const target=event.currentTarget;
+ // A HUD pointer click resumes gameplay keyboard focus; keyboard activation
+ // and the explanatory preview button retain their ordinary button focus.
+ if(target===$("musicGame") && event.detail!==0)canvas.focus({preventScroll:true});
+ $("musicGame").disabled=true;
+ $("musicPreview").disabled=true;
+ $("gameMessage").textContent="Doot is warming up its mathematical vocal cords…";
+ const action = soundtrack.isPlaying() ? soundtrack.toggle(false)
+   : soundtrack.enabled() ? soundtrack.play() : soundtrack.toggle(true);
+ Promise.resolve(action).then(result=>{
+   if(request!==musicRequest)return;
+   updateMusicUI();
+   $("gameMessage").textContent=soundtrack.isPlaying()
+     ? "THE DOOT SONG IS PLAYING. This is not a drill."
+     : soundtrack.enabled()
+       ? "Doot's music is armed, but paused."
+       : result===false
+         ? "Doot Song stopped (or the browser could not start audio)."
+         : "Doot Song is off.";
+ }).catch(()=>{
+   if(request!==musicRequest)return;
+   soundtrack.pause();
+   updateMusicUI();
+   $("gameMessage").textContent="Audio could not start. Check browser sound permissions and output.";
+ }).finally(()=>{
+   if(request!==musicRequest)return;
+   $("musicGame").disabled=false;
+   $("musicPreview").disabled=false;
+ });
+}
+$("musicGame").addEventListener("click",clickMusic);
+$("musicPreview").addEventListener("click",clickMusic);
+updateMusicUI();
 canvas.setAttribute("tabindex","0");
 reset();draw();requestAnimationFrame(loop);
 })();

@@ -13,3 +13,8 @@
 .song-credit summary{color:#b6ff9f;cursor:pointer;font-weight:700}
 .song-credit summary:focus-visible{outline:3px solid #b6ff9f;outline-offset:3px}
 .song-credit pre{font-size:.78rem;line-height:1.75;white-space:pre-wrap;color:#f4d9e9;overflow-wrap:anywhere}
+
+/* An actual, accessible listen control in the lyric-sheet section. */
+.song-preview{display:inline-block;margin:0 8px 8px 0;padding:10px 13px;font-size:.82rem;color:#f5efff;border-color:#d57db9;background:#613d68}
+.song-preview:hover{background:#785286}
+.song-preview:disabled{opacity:.5}

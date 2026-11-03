@@ -85,7 +85,7 @@ This is not a recording or a text-to-speech API call. `music.js` generates an **
 - Three resonant formants (F1/F2/F3) applied to mathematical oscillator waveforms produce robot-like `Doot`, two-part `Email`, rising `Weee`, and an elongated final `Doooooooot`.
 - A seeded pseudo-random noise signal generates plosive consonants and hi-hats. Triangle oscillators generate the bassline. There are **no imported samples, audio files, audio fonts, speech APIs, CDNs, or network calls**.
 - A bounded lookahead sequencer schedules the original phrase, then loops it. It cancels scheduled voices and the interval on pause, game over, or music off, and restarts at the beginning on resume.
-- **Music defaults to off**, separate from sound effects. Click **♫ Doot Song off** to opt in, while the game is running or before starting. It plays only during active gameplay and stops automatically on pause, loss, victory, tab hiding, or browser blur.
+- **Music defaults to off**, separate from sound effects. The lyrics panel now has a real **▶ Hear the Doot Song** button, and the game HUD has a synchronized control. Clicking either starts an audible preview immediately if the browser grants Web Audio activation—even before the level starts. The score continues into gameplay, and pauses on game pause, loss, victory, tab hiding or browser blur. The UI reports a rejected audio start rather than showing fake success.
 - Missing Web Audio support disables the music button gracefully, without breaking the game.
 - The music engine is lightweight and requires no NPM packages or cloud compute.
 

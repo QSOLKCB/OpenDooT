@@ -36,7 +36,7 @@ required = {
     "rehireButton","firedScreen","alertFeed","categories","autoInterrupt",
     "approveButton","researchButton","receiptButton","audacity",
     "gameCanvas","gameOverlay","gameStart","coinCount","lifeCount",
-    "gameTime","restartGame","muteGame","musicGame","touchPause","gameMessage"
+    "gameTime","restartGame","muteGame","musicGame","musicPreview","touchPause","gameMessage"
 }
 assert required <= p.ids, "Missing required element IDs: " + str(required - p.ids)
 assert p.scripts == ["site.js","music.js","game.js"], "Unexpected JavaScript dependencies"
@@ -50,7 +50,7 @@ for js in (site,music,game):
 assert 'id="autoInterrupt" type="checkbox"' in html
 assert "stopAuto()" in site and "fireButton" in site
 assert "DootMusic" in music and "AudioContext" in music
-assert "id=\"musicGame\"" in html and "Doooooooot." in html
+assert "id=\"musicGame\"" in html and "id=\"musicPreview\"" in html and "Doooooooot." in html
 assert "visibilitychange" in game and "requestAnimationFrame" in game
 assert "STEP=1/60" in game and "state.collected>=7" in game
 assert 'role="dialog"' in html and 'aria-modal="true"' in html
