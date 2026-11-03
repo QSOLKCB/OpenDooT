@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101322">
+  <meta name="description" content="OpenDooT: an aggressively unhelpful fictional email assistant, now with a tiny platformer. Privacy-preserving satire.">
+  <title>OpenDooT — Intrusive Intelligence as a Service</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
+  <script src="game.js" defer></script>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <div class="shell">
+    <header class="header">
+      <a class="logo" href="./"><span class="eye-symbol" aria-hidden="true">◉</span> Open<span>DOOT</span><small>uninvited beta</small></a>
+      <nav aria-label="Sections"><a href="#theatre">Control Centre</a><a href="#escape">DooT Escape</a><a href="#manifesto">Manifesto</a></nav>
+      <span class="header-tag"><span class="status-dot"></span> 0 emails accessed</span>
+    </header>
+    <main id="main">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">ARTIFICIALLY INTRUSIVE INTELLIGENCE™</p>
+          <h1>The assistant that <em>won't</em> mind its own business.</h1>
+          <p>Did you just sign in? Just checking. Not that I was watching. I merely felt a disturbance in your imaginary inbox.</p>
+          <div class="hero-buttons">
+            <a class="button primary" href="#theatre">🔔 Ruin my peace</a>
+            <a class="button ghost" href="#escape">🎮 Play DooT Escape</a>
+          </div>
+          <p class="disclaimer">No inbox integration. No accounts. No surveillance. All notifications are invented for satire. Unlike its fictional assistant, this site respects boundaries.</p>
+        </div>
+        <div class="mascot-area" aria-label="A huge cartoon eye pretending not to snoop">
+          <div class="orbital orbital-a"></div><div class="orbital orbital-b"></div>
+          <div class="mascot"><div class="eye-white"><div class="eye-iris"><div class="eye-pupil"></div><span class="eye-shine"></span></div></div><span class="smirk"></span></div>
+          <div class="sticker sticker-top">👀 NOT looking</div><div class="sticker sticker-bottom">✅ Consent assumed*<small>*not actually</small></div>
+        </div>
+      </section>
+
+      <section class="stat-grid" aria-label="Fictional assistant statistics">
+        <div class="stat"><strong id="statInterruptions">0</strong><span>Unsolicited interruptions</span></div>
+        <div class="stat"><strong id="statUseful">0</strong><span>Useful things accomplished</span></div>
+        <div class="stat"><strong id="statAssumptions">0</strong><span>Unfounded assumptions</span></div>
+        <div class="stat"><strong>0</strong><span>Real emails read</span></div>
+      </section>
+
+      <section id="theatre" class="section" aria-labelledby="theatre-title">
+        <div class="section-kicker">UNINVITED ASSISTANT CONTROL CENTRE</div>
+        <h2 id="theatre-title">Notification theatre</h2>
+        <p class="section-lede">The perfect place to experience alerts about things that never happened.</p>
+        <div class="two-panels">
+          <div class="panel">
+            <div class="panel-title"><h3>Configure your nuisance</h3><span class="tag">SIMULATION</span></div>
+            <p class="small-muted">Choose what DooT misunderstands next.</p>
+            <div class="categories" id="categories" role="group" aria-label="Choose category">
+              <button type="button" class="category selected" data-category="all" aria-pressed="true">🎲 Everything</button>
+              <button type="button" class="category" data-category="signins" aria-pressed="false">👁️ Sign-ins</button>
+              <button type="button" class="category" data-category="inbox" aria-pressed="false">📨 Inbox</button>
+              <button type="button" class="category" data-category="billing" aria-pressed="false">💸 Pretend bills</button>
+              <button type="button" class="category" data-category="approvals" aria-pressed="false">🔐 Approvals</button>
+              <button type="button" class="category" data-category="research" aria-pressed="false">🔬 Research</button>
+              <button type="button" class="category" data-category="devices" aria-pressed="false">📱 Devices</button>
+            </div>
+            <div class="slider-line"><label for="audacity">Audacity level</label><strong id="audacityValue">Impertinent</strong></div>
+            <input id="audacity" type="range" min="1" max="5" value="3">
+            <div class="option-line">
+              <div><strong>Autonomous interruptions</strong><span>Opt in explicitly. Off by default.</span></div>
+              <input id="autoInterrupt" type="checkbox" aria-label="Opt in to automatic simulated interruptions">
+            </div>
+            <div class="control-buttons"><button class="button primary" id="notifyButton" type="button">🔔 Ruin my peace</button><button class="button ghost" id="quietButton" type="button">🔕 Quiet mode</button></div>
+            <button class="button fire-button" id="fireButton" type="button">🔥 FIRE DOOT</button>
+            <p id="controlStatus" class="small-muted status-message" role="status">System idle. No interruptions without permission.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><h3>Absolutely critical alerts</h3><button class="text-button" id="clearButton" type="button">Clear</button></div>
+            <div class="terminal-head"><span>● ● ●</span> opendoot://none-of-your-business <span>SIMULATED</span></div>
+            <div id="alertFeed" class="alert-feed" role="log" aria-live="polite" aria-relevant="additions">
+              <div class="empty-alert" id="emptyAlert"><strong>🛌 Silence detected.</strong><span>Our fictional assistant considers this a critical malfunction.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="features">
+        <article class="panel feature"><span class="feature-emoji" aria-hidden="true">🔐</span><h3>Approval Möbius strip</h3><p>Approve the approval required to approve your previous approval.</p><button id="approveButton" class="button ghost" type="button">Approve (1 of ∞)</button><p id="approveStatus" class="small-muted" role="status">No approvals recorded. Suspicious.</p></article>
+        <article class="panel feature"><span class="feature-emoji" aria-hidden="true">🕳️</span><h3>Research black hole</h3><p>Nine hours of imaginary research. Not one useful answer.</p><button id="researchButton" class="button ghost" type="button">Generate research report</button><p id="researchStatus" class="small-muted" role="status">Still researching whether research is necessary.</p></article>
+        <article class="panel feature"><span class="feature-emoji" aria-hidden="true">🛡️</span><h3>Actual privacy</h3><p>Our revolutionary feature: no interest whatsoever in your personal business.</p><button id="receiptButton" class="button ghost" type="button">View privacy receipt</button><p id="receiptStatus" class="small-muted" role="status">No backend, tracking or persistence.</p></article>
+      </section>
+
+      <section id="escape" class="section game-section" aria-labelledby="escape-title">
+        <div class="section-kicker">ARCADE / DEPARTMENT OF DIGITAL BOUNDARIES</div>
+        <h2 id="escape-title">🎮 DooT Escape</h2>
+        <p class="section-lede">A tiny neon 2D platformer. Jump over intrusive notifications, collect <strong>quiet tokens</strong>, and reach the <strong>UNSUBSCRIBE</strong> portal. DooT will not respect your personal space even in a video game.</p>
+        <div class="game-frame">
+          <div class="game-hud" aria-live="off">
+            <span>QUIET <strong id="coinCount">0 / 7</strong></span>
+            <span>LIVES <strong id="lifeCount">♥ ♥ ♥</strong></span>
+            <span>TIME <strong id="gameTime">0:00</strong></span>
+            <button id="muteGame" class="hud-button" type="button" aria-pressed="true">🔇 Sound off</button>
+          </div>
+          <div class="canvas-box">
+            <canvas id="gameCanvas" width="960" height="480" role="img" aria-label="Side scrolling platform game. Collect seven quiet tokens, avoid notifications, and reach the unsubscribe door."></canvas>
+            <div class="game-overlay" id="gameOverlay">
+              <div class="overlay-content">
+                <div class="overline" id="overlayKicker">THE INBOX HAS ESCAPED</div>
+                <h3 id="overlayTitle">Run from DooT.</h3>
+                <p id="overlayDescription">Collect 7 quiet tokens, avoid the red notifications, and reach UNSUBSCRIBE. Three hits and HR gets involved.</p>
+                <button class="button primary" id="gameStart" type="button">▶ Start escaping</button>
+              </div>
+            </div>
+          </div>
+          <div class="game-controls">
+            <span>Move: <kbd>A</kbd><kbd>D</kbd> or <kbd>←</kbd><kbd>→</kbd> · Jump: <kbd>W</kbd>/<kbd>↑</kbd>/<kbd>Space</kbd> · Pause: <kbd>P</kbd>/<kbd>Esc</kbd></span>
+            <button type="button" class="text-button" id="restartGame">↻ Restart level</button>
+          </div>
+          <div class="touch-controls" aria-label="Touch game controls">
+            <button type="button" data-hold="left" aria-label="Move left">◀</button>
+            <button type="button" data-hold="right" aria-label="Move right">▶</button>
+            <button type="button" data-hold="jump" aria-label="Jump">⬆ JUMP</button>
+            <button type="button" id="touchPause" aria-label="Pause or resume game">Ⅱ</button>
+          </div>
+        </div>
+        <p class="game-note">All gameplay happens locally in your browser. No scores uploaded, no accounts, no assets downloaded. Keyboard and touch controls supported. <span id="gameMessage" role="status">DooT may be irritating, but your data stays yours.</span></p>
+      </section>
+
+      <section id="manifesto" class="manifesto">
+        <p class="section-kicker">AN OPEN LETTER TO NEEDLESSLY INVESTED SOFTWARE</p>
+        <h2>What if the next breakthrough in AI was <em>shutting up?</em></h2>
+        <p>Somewhere between “I can help” and “I noticed a thing you never asked me about,” the industry misplaced the concept of minding its own business.</p>
+        <footer>OpenDooT — proudly accomplishing nothing without permission since 2026.<small>Independent satire · Apache-2.0 · HTML + CSS + vanilla JS</small></footer>
+      </section>
+    </main>
+  </div>
+  <div class="fired" id="firedScreen" role="dialog" aria-modal="true" aria-labelledby="firedTitle" hidden>
+    <div class="fired-card"><p class="fired-stamp">EMPLOYMENT TERMINATED</p><div class="fired-eye" aria-hidden="true">◉</div><h2 id="firedTitle">DooT has been fired.</h2><p>“But who will tell you that you signed in after you signed in?”</p><p class="small-muted">Auto-interruptions disabled. This is what boundaries look like.</p><button id="rehireButton" class="button primary" type="button">Rehire for one more terrible idea</button></div>
+  </div>
+</body>
+</html>
