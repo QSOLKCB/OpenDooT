@@ -41,7 +41,7 @@ The original premise above inspired a ridiculous fictional assistant control cen
 
 ### 🎮 DooT Escape — mini 2D platformer
 
-You're a tiny purple character running from intrusive notification monsters. **Collect seven quiet tokens and reach the UNSUBSCRIBE door.** Side-scrolling level, platform jumping, moving hazards, checkpoints, three lives, elapsed-time timer, optional original synthesised sound effects, and a retry screen.
+You're a tiny purple character running from intrusive notification monsters. **Collect seven quiet tokens and reach the UNSUBSCRIBE door.** Side-scrolling level, platform jumping, moving hazards, checkpoints, three lives, elapsed-time timer, optional original synthesised sound effects, and a retry screen. A fully mathematical, opt-in looping soundtrack joins the chaos.
 
 - **Desktop:** A/D or left/right arrows to move; W/up/space to jump; P/Escape to pause.
 - **Touchscreens:** On-page movement, jump, and pause buttons.
@@ -55,10 +55,40 @@ Static HTML, CSS, SVG and vanilla JavaScript. **No build chain, NPM, frameworks,
 
 ### Develop and deploy
 
-Open \`index.html\` locally in a modern browser (no local server required).
+Open `index.html` locally in a modern browser (no local server required).
 
-Run the dependency-free Python smoke checks with \`python3 tests/smoke.py\`. JavaScript syntax checks can be run with \`node --check site.js && node --check game.js\`, but Node is not required to run or develop the site.
+Run the dependency-free Python smoke checks with `python3 tests/smoke.py`. JavaScript syntax checks can be run with `node --check site.js && node --check music.js && node --check game.js`, but Node is not required to run or develop the site.
 
-GitHub Pages is configured with **Source: GitHub Actions**. On a push to \`main\`, \`.github/workflows/pages.yml\` validates the files and deploys a minimal static artifact. Pull requests perform validation only. No production deployment takes place until the change is merged.
+GitHub Pages is configured with **Source: GitHub Actions**. On a push to `main`, `.github/workflows/pages.yml` validates the files and deploys a minimal static artifact. Pull requests perform validation only. No production deployment takes place until the change is merged.
 
 This is an independent fictional parody, not affiliated with OpenAI or any assistant provider.
+
+
+### 🎼 The Doot Song — mathematical robot speech synthesiser
+
+The original nine-line score is derived **directly from the lyrics supplied by the project author**:
+
+```text
+Doot. Doot. Doot. Doot.
+Doot. Doot. Doot. Email.
+Doot. Doot. Doot. Doot.
+Doot. Doot. Doot. Doot.
+Email. Doot. Doot. Doot.
+Doot. Doot. Doot.
+Doot. Doot.
+Doot.
+Weee. Weee.  Weee. Weee.. Doooooooot.
+```
+
+This is not a recording or a text-to-speech API call. `music.js` generates an **original 142 BPM arcade tune** using only the Web Audio API and mathematics:
+
+- Three resonant formants (F1/F2/F3) applied to mathematical oscillator waveforms produce robot-like `Doot`, two-part `Email`, rising `Weee`, and an elongated final `Doooooooot`.
+- A seeded pseudo-random noise signal generates plosive consonants and hi-hats. Triangle oscillators generate the bassline. There are **no imported samples, audio files, audio fonts, speech APIs, CDNs, or network calls**.
+- A bounded lookahead sequencer schedules the original phrase, then loops it. It cancels scheduled voices and the interval on pause, game over, or music off, and restarts at the beginning on resume.
+- **Music defaults to off**, separate from sound effects. Click **♫ Doot Song off** to opt in, while the game is running or before starting. It plays only during active gameplay and stops automatically on pause, loss, victory, tab hiding, or browser blur.
+- Missing Web Audio support disables the music button gracefully, without breaking the game.
+- The music engine is lightweight and requires no NPM packages or cloud compute.
+
+Verification: `node tests/music.test.cjs` checks the exact lyric lines, opt-in, scheduler start/stop, and unsupported Web Audio fallback. `node tests/game-input.test.cjs` continues checking keyboard focus and button activation. The static privacy checks also cover `music.js`.
+
+The point of this soundtrack is to be aggressively silly without becoming the thing it parodies: an unwanted interruption.

@@ -17,7 +17,7 @@ const doc = {
   querySelectorAll() {return [];},
   getElementById(id) {
     if(!elementCache.has(id)) {
-      const tagName = ["muteGame","touchPause","gameStart","restartGame"].includes(id) ? "BUTTON" : id==="gameCanvas" ? "CANVAS" : "DIV";
+      const tagName = ["muteGame","musicGame","touchPause","gameStart","restartGame"].includes(id) ? "BUTTON" : id==="gameCanvas" ? "CANVAS" : "DIV";
       const item = {
         id,tagName,textContent:"",hidden:false,attributes:{},handlers:{},
         classList:{toggle(){}},
@@ -40,7 +40,20 @@ const ctx = {
   arc(){},fillText(){}
 };
 let frame;
-const win = {addEventListener(type,fn){hooks.set("window:"+type,fn);}};
+const soundtrack = {
+  supported:true,enabled:false,playing:false,playCalls:0,pauseCalls:0,
+  toggle(shouldPlay) {
+    this.enabled=!this.enabled;
+    this.playing=this.enabled&&shouldPlay;
+    return this.enabled;
+  },
+  play(){this.playCalls++;if(this.enabled){this.playing=true;return true;}return false;},
+  pause(){this.pauseCalls++;this.playing=false;}
+};
+const win = {
+  DootMusic:soundtrack,
+  addEventListener(type,fn){hooks.set("window:"+type,fn);}
+};
 const sandbox = {
   window:win,
   document:doc,
@@ -100,6 +113,24 @@ tick();
 assert.ok(state.player.x>x,"Movement must resume after sound click");
 keyboard("d",false);
 
+// Music must remain a separate opt-in switch from sound effects.
+assert.equal(soundtrack.enabled,false,"No soundtrack autoplay");
+click("musicGame",1);
+assert.equal(doc.activeElement,el("gameCanvas"),"Pointer music toggle returns focus to canvas");
+assert.equal(soundtrack.enabled,true,"Music is enabled only after explicit click");
+assert.equal(soundtrack.playing,true,"Music starts during an active game");
+spaceActivate("musicGame");
+assert.equal(soundtrack.enabled,false,"Keyboard Space toggles music off");
+spaceActivate("musicGame");
+assert.equal(soundtrack.enabled,true,"Keyboard Space toggles music back on");
+assert.equal(keyboard("p"),true,"P should pause when the music button is focused");
+assert.equal(state.mode,"paused");
+assert.equal(soundtrack.playing,false,"Paused gameplay silences the soundtrack");
+assert.equal(keyboard("Escape"),true);
+assert.equal(state.mode,"running");
+assert.equal(soundtrack.playing,true,"Resuming gameplay resumes opted-in music");
+assert.equal(doc.activeElement,el("gameCanvas"));
+
 // Keyboard activation keeps the sound button focused for accessibility,
 // but movement, arrow jumping and pause must still work there.
 click("muteGame",0);
@@ -126,6 +157,7 @@ spaceActivate("touchPause");
 assert.equal(state.mode,"running","Space must resume from focused pause button");
 spaceActivate("restartGame");
 assert.equal(state.mode,"ready","Space must activate the focused restart button");
+assert.equal(soundtrack.playing,false,"Restart ends active music");
 spaceActivate("gameStart");
 assert.equal(state.mode,"running","Space must activate the focused start button");
 assert.equal(doc.activeElement,el("gameCanvas"),"Start should return game focus");
@@ -154,4 +186,4 @@ assert.equal(input.right,false,"Releasing a game key after focus change must not
 doc.activeElement={tagName:"BUTTON"};
 keyboard("d");
 assert.equal(input.right,false,"Unrelated focused buttons remain untouched");
-console.log("DooT Escape full Space keydown/keyup, native button activation, focus, movement and typing: PASS");
+console.log("DooT Escape game/SFX/music focus, Space keyup, pause/resume and input isolation: PASS");
