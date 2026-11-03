@@ -28,4 +28,4 @@ For example >>>
 
 "Heads up I know your inbox has like 20 failed github runs, but have you seen the $10 you owe on your latest unpaid bill?"
 
-DOT deleted.  
+DOT deleted. Reason, maybe I would be rolling in cash if it actually helped, instead of reading my fucking emails all the fucking time? how about that?  
