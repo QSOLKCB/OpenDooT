@@ -46,7 +46,7 @@ class AudioContextMock {
   createBufferSource(){return node();}
   createBiquadFilter(){return node();}
   createBuffer(_channels,frames){return {getChannelData(){return new Float32Array(frames);}};}
-  resume(){return {catch(){}};}
+  resume(){this.state="running";return Promise.resolve();}
 }
 const browser = {
   AudioContext: AudioContextMock
@@ -58,6 +58,7 @@ vm.runInNewContext(source,{
   Math,Object,Float32Array
 },{filename:"music.js"});
 const music=browser.DootMusic;
+async function run() {
 assert.ok(music,"Global song controller exposed");
 assert.equal(music.supported,true);
 assert.equal(music.bpm,142);
@@ -69,20 +70,18 @@ assert.equal(music.enabled(),false,"Music must default to disabled");
 assert.equal(music.isPlaying(),false,"Music must default to silent");
 assert.equal(created.contexts,0,"AudioContext must NOT be constructed on page load");
 assert.equal(timers.size,0,"No background timer before user opt-in");
-assert.equal(music.play(),false,"Cannot start soundtrack without opt-in");
+assert.equal(await music.play(),false,"Cannot start soundtrack without opt-in");
 assert.equal(created.contexts,0,"Cannot allocate audio during denied autoplay");
 
-// Enabling while on menu keeps silent until game start.
-assert.equal(music.toggle(false),true);
+// Clicking a real preview button must schedule audio immediately, including
+// when the level is still on its title screen.
+assert.equal(await music.toggle(true),true,"Opt-in must await audio readiness");
 assert.equal(music.enabled(),true);
-assert.equal(music.isPlaying(),false);
+assert.equal(music.isPlaying(),true,"Preview must be playing immediately after opt-in resolves");
 assert.equal(created.contexts,1);
-assert.equal(timers.size,0);
-assert.equal(music.play(),true);
-assert.equal(music.isPlaying(),true);
 assert.equal(timers.size,1);
 assert.ok(created.starts>0,"Music must synthesise voice, bass and rhythm");
-assert.equal(music.play(),false,"Repeated play must not allocate duplicate schedulers");
+assert.equal(await music.play(),false,"Repeated play must not allocate duplicate schedulers");
 assert.equal(timers.size,1);
 const before=created.starts;
 AudioContextMock.last.currentTime+=0.4;
@@ -92,13 +91,13 @@ music.pause();
 assert.equal(music.isPlaying(),false);
 assert.equal(timers.size,0,"No scheduler after pause");
 assert.ok(created.stops>0,"Pause stops scheduled musical sources");
-assert.equal(music.play(),true,"Resume restarts phrase only when enabled");
+assert.equal(await music.play(),true,"Resume restarts phrase only when enabled");
 assert.equal(timers.size,1);
-assert.equal(music.toggle(true),false,"Opt-out immediately disables");
+assert.equal(await music.toggle(true),false,"Opt-out immediately disables");
 assert.equal(music.enabled(),false);
 assert.equal(music.isPlaying(),false);
 assert.equal(timers.size,0);
-assert.equal(music.play(),false,"Disabled soundtrack remains silent");
+assert.equal(await music.play(),false,"Disabled soundtrack remains silent");
 
 const unsupported={};
 vm.runInNewContext(source,{
@@ -108,7 +107,47 @@ vm.runInNewContext(source,{
   Math,Object,Float32Array
 });
 assert.equal(unsupported.DootMusic.supported,false);
-assert.equal(unsupported.DootMusic.toggle(true),false);
-assert.equal(unsupported.DootMusic.play(),false);
+assert.equal(await unsupported.DootMusic.toggle(true),false);
+assert.equal(await unsupported.DootMusic.play(),false);
 
-console.log("The Doot Song: exact score, mathematics-only synth, opt-in, scheduler, pause, and fallback PASS");
+// A rejected AudioContext resume must never leave a false "on" state.
+class RejectedContext extends AudioContextMock {
+  resume(){return Promise.reject(new Error("Audio blocked"));}
+}
+const rejected={AudioContext:RejectedContext};
+vm.runInNewContext(source,{
+  window:rejected,Math,Object,Float32Array,
+  setInterval(){throw Error("Rejected audio must never start a scheduler");},
+  clearInterval(){}
+});
+assert.equal(await rejected.DootMusic.toggle(true),false,"Reject browser audio failure");
+assert.equal(rejected.DootMusic.enabled(),false,"Failed resume must clear enabled state");
+assert.equal(rejected.DootMusic.isPlaying(),false,"Failed resume must stay silent");
+
+// Pausing/cancelling while resume is pending must not start music later.
+let releaseResume=null;
+class DeferredContext extends AudioContextMock {
+  resume(){
+    return new Promise(resolve=>{
+      releaseResume=()=>{this.state="running";resolve();};
+    });
+  }
+}
+const deferredTimers=new Map();
+const deferred={AudioContext:DeferredContext};
+vm.runInNewContext(source,{
+  window:deferred,Math,Object,Float32Array,
+  setInterval(fn,interval){const id=deferredTimers.size+1;deferredTimers.set(id,fn);return id;},
+  clearInterval(id){deferredTimers.delete(id);}
+});
+const pending=deferred.DootMusic.toggle(true);
+assert.equal(deferred.DootMusic.isPlaying(),false);
+assert.equal(await deferred.DootMusic.toggle(true),false,"Turning off pending playback succeeds");
+assert.ok(releaseResume,"Browser resume attempt must have been started");
+releaseResume();
+assert.equal(await pending,false,"Stale browser resume cannot start audio");
+assert.equal(deferred.DootMusic.isPlaying(),false);
+assert.equal(deferredTimers.size,0,"No leaked scheduler after cancelled resume");
+console.log("The Doot Song: real preview, resume readiness, rejection, cancellation, exact lyrics and scheduler PASS");
+}
+run().catch(error=>{console.error(error);process.exitCode=1;});

@@ -24,7 +24,6 @@
   const MELODY = [0, 2, 4, 2, 1, 3, 5, 3, 0, 4, 3, 1, 2, 5, 4, 3];
   const BASS = [36, 43, 39, 41]; // C, G, Eb, F
   const NOTE = midi => 440 * Math.pow(2, (midi - 69) / 12);
-  const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 
   // Deterministic score, preserving all nine lines and every syllable.
   const score = [];
@@ -59,15 +58,16 @@
   let timer = null;
   let position = 0;
   let origin = 0;
+  let generation = 0; // Invalidates pending audio-resume requests on pause/opt-out.
   const active = new Set();
 
-  function ensure() {
+  async function ensure() {
     if (!AudioCtor) return false;
     try {
       if (!context) {
         context = new AudioCtor();
         mix = context.createGain();
-        mix.gain.value = 0.21; // deliberately quiet, below typical SFX
+        mix.gain.value = 0.42; // audible but conservatively below clipping
         mix.connect(context.destination);
         const samples = Math.ceil(context.sampleRate * 0.055);
         noise = context.createBuffer(1, samples, context.sampleRate);
@@ -78,13 +78,11 @@
           output[i] = ((seed >>> 8) / 0x1000000) * 2 - 1;
         }
       }
-      // Play and toggle are called from a real user gesture.
-      const promise = context.resume();
-      if (promise && typeof promise.catch === "function") promise.catch(() => pause());
-      return true;
+      // The browser's promise, not merely a click, establishes audio readiness.
+      // resume() is invoked synchronously from the click before the first await.
+      await context.resume();
+      return !context.state || context.state === "running";
     } catch (_error) {
-      on = false;
-      pause();
       return false;
     }
   }
@@ -217,6 +215,7 @@
   }
 
   function pause() {
+    ++generation;
     playing = false;
     if (timer !== null) { clearInterval(timer); timer = null; }
     for (const item of active) {
@@ -229,25 +228,39 @@
     position = 0;
   }
 
-  function play() {
-    if (!on || playing || !ensure()) return false;
-    playing = true;
-    position = 0;
-    origin = context.currentTime + 0.065;
-    schedule();
-    timer = setInterval(schedule, 45);
-    return true;
+  async function play() {
+    if (!on || playing) return false;
+    const requested = ++generation;
+    const ready = await ensure();
+    if (requested !== generation || !on) return false; // stale async completion
+    if (!ready) {
+      on = false;
+      pause();
+      return false;
+    }
+    try {
+      playing = true;
+      position = 0;
+      origin = context.currentTime + 0.065;
+      schedule();
+      timer = setInterval(schedule, 45);
+      return true;
+    } catch (_error) {
+      on = false;
+      pause();
+      return false;
+    }
   }
 
-  function toggle(shouldPlay) {
+  async function toggle(shouldPlay = true) {
     if (on) {
       on = false;
       pause();
-    } else if (ensure()) {
-      on = true;
-      if (shouldPlay) play();
+      return false;
     }
-    return on;
+    on = true;
+    // The UI may only say "playing" after resume() and scheduling succeed.
+    return shouldPlay ? play() : true;
   }
 
   window.DootMusic = Object.freeze({

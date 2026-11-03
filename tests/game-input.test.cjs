@@ -17,7 +17,7 @@ const doc = {
   querySelectorAll() {return [];},
   getElementById(id) {
     if(!elementCache.has(id)) {
-      const tagName = ["muteGame","musicGame","touchPause","gameStart","restartGame"].includes(id) ? "BUTTON" : id==="gameCanvas" ? "CANVAS" : "DIV";
+      const tagName = ["muteGame","musicGame","musicPreview","touchPause","gameStart","restartGame"].includes(id) ? "BUTTON" : id==="gameCanvas" ? "CANVAS" : "DIV";
       const item = {
         id,tagName,textContent:"",hidden:false,attributes:{},handlers:{},
         classList:{toggle(){}},
@@ -25,6 +25,16 @@ const doc = {
         addEventListener(type,fn){this.handlers[type]=fn;},
         focus(){doc.activeElement=this;}
       };
+      // Mirror browser behavior: disabling an active button removes focus.
+      // This makes focus regressions observable in the test harness.
+      let disabled=false;
+      Object.defineProperty(item,"disabled",{
+        get(){return disabled;},
+        set(value){
+          disabled=Boolean(value);
+          if(disabled && doc.activeElement===item)doc.activeElement=doc.body;
+        }
+      });
       if(id==="gameCanvas"){
         item.getContext=()=>ctx;
       }
@@ -41,13 +51,24 @@ const ctx = {
 };
 let frame;
 const soundtrack = {
-  supported:true,enabled:false,playing:false,playCalls:0,pauseCalls:0,
+  supported:true,active:false,playing:false,playCalls:0,pauseCalls:0,
+  toggleCalls:0,delayNext:false,finishPending:null,
+  enabled(){return this.active;},
+  isPlaying(){return this.playing;},
   toggle(shouldPlay) {
-    this.enabled=!this.enabled;
-    this.playing=this.enabled&&shouldPlay;
-    return this.enabled;
+    this.toggleCalls++;
+    this.active=!this.active;
+    if(shouldPlay && this.delayNext){
+      this.delayNext=false;
+      this.playing=false;
+      return new Promise(resolve=>{
+        this.finishPending=()=>{this.playing=true;resolve(true);};
+      });
+    }
+    this.playing=this.active&&shouldPlay;
+    return this.playing;
   },
-  play(){this.playCalls++;if(this.enabled){this.playing=true;return true;}return false;},
+  play(){this.playCalls++;if(this.active){this.playing=true;return true;}return false;},
   pause(){this.pauseCalls++;this.playing=false;}
 };
 const win = {
@@ -72,7 +93,7 @@ const {state,input}=sandbox.__testState;
 const el=id=>doc.getElementById(id);
 const click=(id,detail=1)=>{
   doc.activeElement=el(id);
-  el(id).handlers.click({detail});
+  el(id).handlers.click({detail,currentTarget:el(id)});
 };
 const keyboard=(key,pressed=true)=>{
   let prevented=false;
@@ -90,13 +111,52 @@ function spaceActivate(id){
   doc.activeElement=button;
   assert.equal(keyboard(" ",true),false,"Space keydown must preserve "+id+" activation");
   assert.equal(keyboard(" ",false),false,"Space keyup must preserve "+id+" activation");
-  button.handlers.click({detail:0});
+  button.handlers.click({detail:0,currentTarget:button});
   assert.equal(input.jump,false,"Space button interaction must not leave jump held");
+}
+async function flushMusic() {
+  // Process the .then(), .catch() and .finally() microtasks on an audio request.
+  await new Promise(resolve=>setImmediate(resolve));
 }
 let ms=1000;
 function tick(frames=2){
   for(let i=0;i<frames;i++){ms+=17;frame(ms);}
 }
+
+async function run() {
+// The real focusable preview button must survive pending audio startup.
+assert.equal(state.mode,"ready");
+const preview=el("musicPreview");
+soundtrack.delayNext=true;
+spaceActivate("musicPreview");
+assert.equal(doc.activeElement,preview,"Space focuses the preview button");
+assert.equal(preview.disabled,false,"Pending playback must not disable its button");
+assert.equal(preview.attributes["aria-busy"],"true","Pending audio uses aria-busy instead");
+assert.equal(el("musicGame").disabled,false,"HUD button remains focusable too");
+const pendingCalls=soundtrack.toggleCalls;
+spaceActivate("musicPreview");
+assert.equal(soundtrack.toggleCalls,pendingCalls,"Repeated clicks while pending must not start a second request");
+assert.equal(doc.activeElement,preview,"Repeated Space while pending must preserve focus");
+soundtrack.finishPending();
+await flushMusic();
+assert.equal(preview.attributes["aria-busy"],"false","Busy state clears after audio settles");
+assert.equal(doc.activeElement,preview,"The preview stays keyboard-focused after audio starts");
+assert.equal(soundtrack.isPlaying(),true,"Completing resume starts the track");
+spaceActivate("musicPreview");
+await flushMusic();
+assert.equal(soundtrack.enabled(),false,"Second Space turns off playback from the same focused button");
+assert.equal(doc.activeElement,preview,"Stopping must not lose keyboard focus");
+
+// The new lyric-sheet control must actually play before the game starts.
+assert.equal(state.mode,"ready");
+click("musicPreview",1);
+await flushMusic();
+assert.equal(soundtrack.enabled(),true,"Preview click enables audio in the menu");
+assert.equal(soundtrack.isPlaying(),true,"Preview is audible without first starting gameplay");
+click("musicPreview",1);
+await flushMusic();
+assert.equal(soundtrack.enabled(),false,"Second preview click disables music");
+assert.equal(soundtrack.isPlaying(),false);
 
 // Start via the real button handler. The game itself should own focus.
 click("gameStart");
@@ -114,15 +174,26 @@ assert.ok(state.player.x>x,"Movement must resume after sound click");
 keyboard("d",false);
 
 // Music must remain a separate opt-in switch from sound effects.
-assert.equal(soundtrack.enabled,false,"No soundtrack autoplay");
+assert.equal(soundtrack.enabled(),false,"No soundtrack autoplay");
 click("musicGame",1);
+await flushMusic();
 assert.equal(doc.activeElement,el("gameCanvas"),"Pointer music toggle returns focus to canvas");
-assert.equal(soundtrack.enabled,true,"Music is enabled only after explicit click");
+assert.equal(soundtrack.enabled(),true,"Music is enabled only after explicit click");
 assert.equal(soundtrack.playing,true,"Music starts during an active game");
 spaceActivate("musicGame");
-assert.equal(soundtrack.enabled,false,"Keyboard Space toggles music off");
+await flushMusic();
+assert.equal(doc.activeElement,el("musicGame"),"HUD button stays focused after stopping with Space");
+assert.equal(soundtrack.enabled(),false,"Keyboard Space toggles music off");
 spaceActivate("musicGame");
-assert.equal(soundtrack.enabled,true,"Keyboard Space toggles music back on");
+await flushMusic();
+assert.equal(doc.activeElement,el("musicGame"),"HUD button stays focused after starting with Space");
+assert.equal(soundtrack.enabled(),true,"Keyboard Space toggles music back on");
+spaceActivate("musicPreview");
+await flushMusic();
+assert.equal(soundtrack.enabled(),false,"Space activates lyric-sheet button");
+spaceActivate("musicPreview");
+await flushMusic();
+assert.equal(soundtrack.enabled(),true,"Lyric-sheet button can re-enable song");
 assert.equal(keyboard("p"),true,"P should pause when the music button is focused");
 assert.equal(state.mode,"paused");
 assert.equal(soundtrack.playing,false,"Paused gameplay silences the soundtrack");
@@ -186,4 +257,6 @@ assert.equal(input.right,false,"Releasing a game key after focus change must not
 doc.activeElement={tagName:"BUTTON"};
 keyboard("d");
 assert.equal(input.right,false,"Unrelated focused buttons remain untouched");
-console.log("DooT Escape game/SFX/music focus, Space keyup, pause/resume and input isolation: PASS");
+console.log("DooT Escape music buttons retain keyboard focus across pending audio, Space, pause/resume and typing: PASS");
+}
+run().catch(error=>{console.error(error);process.exitCode=1;});
