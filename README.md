@@ -1,7 +1,8 @@
 # OpenDooT
-OpenDooT - The Email Checker That Updates Your Email And Tells You About IT - Even When You Didn't Ask It Too.
+OpenDooT - The Email Checker That Updates Your Email And Tells You About IT - Even When You Didn't Ask For It.
 
-For example.
+
+For example >>>
 
 "Did you just sign in? Just checking, not that I was looking or anything :-)."
 
